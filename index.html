@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ARTV Director HUD · HQ Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --border-soft: rgba(120, 180, 255, 0.38);
+      --border-strong: rgba(120, 180, 255, 0.6);
+      --bg-card: rgba(3, 9, 38, 0.9);
+      --text-main: #e5f2ff;
+      --text-muted: #9bbcff;
+      --accent-ok: rgba(0, 255, 150, 0.7);
+      --accent-warn: rgba(255, 210, 0, 0.85);
+      --accent-err: rgba(255, 80, 120, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #060b20 0, #02030a 55%, #000 100%);
+      color: var(--text-main);
+    }
+
+    .frame {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 20px 18px;
+      gap: 10px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 6px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .logo-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-main {
+      font-size: 18px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.95;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+      opacity: 0.86;
+    }
+
+    .status-strip {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 3px 10px 4px;
+      border: 1px solid var(--border-strong);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.95;
+    }
+
+    .pill span {
+      display: inline-block;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-ok);
+      box-shadow: 0 0 8px rgba(0, 255, 150, 0.9);
+    }
+
+    .dot-warn {
+      background: var(--accent-warn);
+      box-shadow: 0 0 8px rgba(255, 210, 0, 0.9);
+    }
+
+    .dot-err {
+      background: var(--accent-err);
+      box-shadow: 0 0 8px rgba(255, 80, 120, 0.9);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 2.1fr 1.6fr 1.6fr;
+      grid-template-rows: auto auto auto;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+    }
+
+    .panel {
+      border-radius: 12px;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-card);
+      padding: 10px 11px 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      border-bottom: 1px solid rgba(120, 180, 255, 0.25);
+      padding-bottom: 4px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+    }
+
+    .panel-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      opacity: 0.8;
+    }
+
+    .tag-ok {
+      color: #7cffbe;
+    }
+
+    .tag-warn {
+      color: #ffe892;
+    }
+
+    .tag-err {
+      color: #ffb5c4;
+    }
+
+    .body {
+      font-size: 11px;
+      line-height: 1.45;
+      opacity: 0.9;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      padding: 2px 8px;
+      font-size: 10px;
+      opacity: 0.9;
+    }
+
+    .badge-ok {
+      border-color: var(--accent-ok);
+      color: #7cffbe;
+    }
+
+    .badge-warn {
+      border-color: var(--accent-warn);
+      color: #ffe892;
+    }
+
+    .badge-err {
+      border-color: var(--accent-err);
+      color: #ffb5c4;
+    }
+
+    ul.compact {
+      margin: 2px 0 0;
+      padding-left: 14px;
+      list-style-type: disc;
+    }
+
+    ul.compact li {
+      margin: 0;
+      padding: 0;
+    }
+
+    code {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 10px;
+    }
+
+    footer {
+      font-size: 10px;
+      opacity: 0.7;
+      padding-top: 5px;
+      border-top: 1px solid var(--border-soft);
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="logo-block">
+        <div class="logo-main">ARTV · DIRECTOR HUD</div>
+        <div class="logo-sub">HQ COMMAND CENTER · NINE-PANEL MATRIX</div>
+      </div>
+      <div class="status-strip">
+        <div class="pill">
+          <span class="dot"></span>
+          <span>HQ ONLINE</span>
+        </div>
+        <div class="pill">
+          <span class="dot"></span>
+          <span>ARL FULL POWER</span>
+        </div>
+        <div class="pill">
+          <span class="dot-warn"></span>
+          <span>MN LOCKED · SUPPORT PENDING</span>
+        </div>
+        <div class="pill">
+          <span class="dot"></span>
+          <span>DIRECTOR CONTROL LINE ACTIVE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9-PANEL GRID LAYOUT -->
+    <div class="layout">
+      <!-- PANEL 1: MISSION CONTROL -->
+      <section class="panel" style="grid-column: 1 / 2; grid-row: 1 / 2;">
+        <div class="panel-header">
+          <div class="panel-title">Mission Control</div>
+          <div class="panel-tag tag-ok">Core Telemetry</div>
+        </div>
+        <div class="body">
+          <div class="badge-row">
+            <span class="badge badge-ok">HQ: ONLINE</span>
+            <span class="badge badge-ok">ARL: FULL MODE</span>
+            <span class="badge badge-ok">Studio: LINKED</span>
+            <span class="badge badge-warn">MN: LOCKED</span>
+            <span class="badge badge-ok">DeepAgent: COST-SAFE</span>
+            <span class="badge badge-ok">Linguaflex: VR+ARL</span>
+          </div>
+          <ul class="compact">
+            <li><code>/deploy</code> – Pipeline execution</li>
+            <li><code>/scenario-test</code> – ARL scenario matrix</li>
+            <li><code>/diagnostics</code> – Full-stack health check</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PANEL 2: BUILD & RELEASES -->
+      <section class="panel" style="grid-column: 2 / 3; grid-row: 1 / 2;">
+        <div class="panel-header">
+          <div class="panel-title">Build & Releases</div>
+          <div class="panel-tag tag-ok">TAG = 1.0.1</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li><code>make push-svc TAG=1.0.1</code></li>
+            <li><code>make deploy-svc TAG=1.0.1</code></li>
+            <li><code>make bootstrap</code></li>
+            <li><code>make logs-follow SEVERITY=WARNING</code></li>
+            <li><code>make test-drop</code></li>
+          </ul>
+          <div class="badge-row">
+            <span class="badge badge-ok">Latest: Clean</span>
+            <span class="badge badge-ok">Registry: Verified</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL 3: AGENT ORCHESTRATOR -->
+      <section class="panel" style="grid-column: 3 / 4; grid-row: 1 / 2;">
+        <div class="panel-header">
+          <div class="panel-title">Agent Orchestrator</div>
+          <div class="panel-tag tag-ok">Network</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li><code>Governance</code> – ChatGPT (ARL-rooted)</li>
+            <li><code>Linguaflex</code> – ARL + EI + Avatar</li>
+            <li><code>Gemini</code> – Docs/Drive (no governance)</li>
+            <li><code>SystemOps</code> – n8n / Zapier</li>
+            <li><code>DeepAgent</code> – High-cost infra</li>
+            <li><code>MN Agent</code> – Staged (await unlock)</li>
+            <li><code>Legal Agent</code> – Pending activation</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PANEL 4: V-CHAIN LEDGER -->
+      <section class="panel" style="grid-column: 1 / 2; grid-row: 2 / 3;">
+        <div class="panel-header">
+          <div class="panel-title">V-Chain Ledger</div>
+          <div class="panel-tag tag-ok">Verification Chain</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li>ARL corpus versions (immutably logged)</li>
+            <li>DKIM / SPF / DMARC changes</li>
+            <li>MN domain attempts & status</li>
+            <li>Slack / Studio / MN routing history</li>
+          </ul>
+          <div class="badge-row">
+            <span class="badge badge-ok">Ledger: Healthy</span>
+            <span class="badge badge-ok">Tamper: None detected</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL 5: COMMS HUB -->
+      <section class="panel" style="grid-column: 2 / 3; grid-row: 2 / 3;">
+        <div class="panel-header">
+          <div class="panel-title">Comms Hub</div>
+          <div class="panel-tag tag-ok">Routing</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li><code>Slack</code> – <code>#ai-video-alerts</code></li>
+            <li><code>MN</code> – Domain staged (locked)</li>
+            <li><code>YouTube</code> – Video Builder endpoint</li>
+            <li><code>Gmail</code> – robin@ / director@ / system@</li>
+          </ul>
+          <div class="badge-row">
+            <span class="badge badge-ok">Alerts: Active</span>
+            <span class="badge badge-warn">MN feed: Pending unlock</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL 6: ALERTS & RUNBOOKS -->
+      <section class="panel" style="grid-column: 3 / 4; grid-row: 2 / 3;">
+        <div class="panel-header">
+          <div class="panel-title">Alerts & Runbooks</div>
+          <div class="panel-tag tag-warn">Watchlist</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li>MN Account: <code>LOCKED – Awaiting support</code></li>
+            <li>DKIM: Pending activation click in Admin</li>
+            <li>Agent Certification: Phase III complete</li>
+          </ul>
+          <ul class="compact">
+            <li>Runbook: MN Domain Activation</li>
+            <li>Runbook: Studio → MN Pipeline</li>
+            <li>Runbook: ARL Emergency Override</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PANEL 7: MIGHTY NETWORKS INTEGRATION -->
+      <section class="panel" style="grid-column: 1 / 2; grid-row: 3 / 4;">
+        <div class="panel-header">
+          <div class="panel-title">Mighty Networks Integration</div>
+          <div class="panel-tag tag-warn">Staged</div>
+        </div>
+        <div class="body">
+          <div class="badge-row">
+            <span class="badge badge-warn">Access: LOCKED</span>
+            <span class="badge badge-ok">CNAME: OK (www → ssl.mn.co)</span>
+            <span class="badge badge-warn">SSL: Not issued</span>
+            <span class="badge badge-ok">ARL Overhaul: Staged</span>
+          </div>
+          <ul class="compact">
+            <li>Spaces templates prepared</li>
+            <li>Paid tiers architecture scaffolded</li>
+            <li>MN Agent ready to deploy post-unlock</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PANEL 8: BROADCAST STUDIO PIPELINE -->
+      <section class="panel" style="grid-column: 2 / 3; grid-row: 3 / 4;">
+        <div class="panel-header">
+          <div class="panel-title">Broadcast Studio Pipeline</div>
+          <div class="panel-tag tag-ok">Linked</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li>Inputs: Mevo, Descript, Canva, VR Avatar</li>
+            <li>Outputs (staged): MN, YouTube, IG, Drive, Slack</li>
+            <li>Automation: Loupedeck macros, n8n triggers</li>
+          </ul>
+          <div class="badge-row">
+            <span class="badge badge-ok">Video Builder Levels: 1–5 ready</span>
+            <span class="badge badge-ok">ARL Filter: ON</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL 9: SECURITY & SECRETS -->
+      <section class="panel" style="grid-column: 3 / 4; grid-row: 3 / 4;">
+        <div class="panel-header">
+          <div class="panel-title">Security & Secrets</div>
+          <div class="panel-tag tag-ok">Vault</div>
+        </div>
+        <div class="body">
+          <ul class="compact">
+            <li>Vault: <code>/home/ubuntu/artv_vault/</code> – Clean</li>
+            <li>DKIM + credentials stored & encrypted</li>
+            <li>API keys mapped: Drive, Slack, Zapier, MN</li>
+            <li>No agent can bypass ARL or governance layer</li>
+          </ul>
+          <div class="badge-row">
+            <span class="badge badge-ok">Integrity: Verified</span>
+            <span class="badge badge-ok">Privilege Escalation: Locked</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <span>Director HUD · Voice + Command Line Binding (conceptual)</span>
+      <span>HQ Matrix Version: v2.0 · 9-Panel Layout</span>
+    </footer>
+  </div>
+</body>
+</html>
